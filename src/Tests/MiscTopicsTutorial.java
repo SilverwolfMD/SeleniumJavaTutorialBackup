@@ -38,7 +38,7 @@ public class MiscTopicsTutorial {
 		
 		// initialize webDriver
 		TestToolkit.InitProps();
-		driver = TestToolkit.InitWebDrv("chrome", opts); // initialize webdriver with the specific options.
+		driver = TestToolkit.InitWebDrv("chrome", opts, false); // initialize webdriver with the specific options.
 		driver.manage().window().maximize(); // maximize window
 		driver.manage().deleteAllCookies(); // purge the cookies from the web browser.  Or, you can use deleteCookieNamed(CookieName) which will delete a specific cookie.
 		// driver.manage().addCookie(CookieObject); // adds a specific cookie.

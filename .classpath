@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="E:/Users/Fionn/Documents/Library of Palanthas/1.work ƒ/QualiTest/Selenium Jars/client-combined-3.141.59.jar"/>
+	<classpathentry kind="lib" path="E:/Users/Fionn/Documents/Library of Palanthas/1.work ƒ/QualiTest/Selenium Jars/client-combined-3.141.59-sources.jar"/>
+	<classpathentry kind="lib" path="E:/Users/Fionn/Documents/Library of Palanthas/1.work ƒ/QualiTest/Selenium Jars/selenium-server-standalone-3.141.59.jar"/>
+	<classpathentry kind="lib" path="E:/Users/Fionn/Documents/Library of Palanthas/1.work ƒ/QualiTest/Utility Jars/javafaker-1.0.2.jar"/>
+	<classpathentry kind="lib" path="E:/Users/Fionn/Documents/Library of Palanthas/1.work ƒ/QualiTest/Utility Jars/log4j-core-2.13.3.jar"/>
+	<classpathentry kind="lib" path="E:/Users/Fionn/Documents/Library of Palanthas/1.work ƒ/QualiTest/Utility Jars/testng-7.3.0.jar"/>
+	<classpathentry kind="lib" path="E:/Users/Fionn/Documents/Library of Palanthas/1.work ƒ/QualiTest/Selenium Jars/apache-maven-3.6.3/lib/commons-io-2.5.jar"/>
+	<classpathentry kind="lib" path="E:/Users/Fionn/Documents/Library of Palanthas/1.work ƒ/QualiTest/Utility Jars/extentreports-5.0.6.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

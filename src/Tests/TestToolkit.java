@@ -4,13 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.core.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.OutputType;
@@ -23,9 +23,25 @@ import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.remote.RemoteWebDriver;
+// to be removed to a different class based on preference of logging methods
+import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.core.Logger;
+import com.aventstack.extentreports.ExtentReports;
+import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 
 public class TestToolkit {
+	
+	/*
+	 * By Christopher T. Rosenbaum, MD
+	 * For Qualitest Group
+	 * 
+	 * The Test Toolkit is a cumulative practical toolkit compiled from lessons in Selenium Java which includes commonly used code
+	 * and methods in an easy-to-access class.  These methods are universal to Selenium Java and commonly used methods by Maven. As methods
+	 * are public and static, they are usable by any class in the same package, and allow the user to extend inheritance from other 
+	 * classes as desired.
+	 * 
+	 */
 	
 		
 	//global variables
@@ -33,16 +49,17 @@ public class TestToolkit {
 	public FileInputStream readStream; // I/O stream object which negotiates the link between the .properties file and the properties file object
 	public static Logger log1; // even though this is global, we want it persistent through the runtime.
 	public static JavascriptExecutor js; // used for page manipulation
+	// time enumerators: soon to be deprecated in favor of a date-to-ordinal method.
 	public enum Months {JANUARY, FEBRUARY, MARCH, APRIL, MAY, JUNE, JULY, AUGUST, SEPTEMBER, OCTOBER, NOVEMBER, DECEMBER};
 	public enum ShortMonths {JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC};
-	public enum Browser {CHROME, FIREFOX, MSIE, EDGE, SAFARI, OPERA, PROP}; // allows for switch selection of a web browser, or PROP for use of the properties file
-	
+	public enum Browser {CHROME, FIREFOX, MSIE, EDGE, SAFARI, OPERA, REMOTE, PROP}; // allows for switch selection of a web browser, or PROP for use of the properties file
+	public static WebDriver gDriver;  // Instantiated if the user requests one global webdriver
 	
 	public static void InitProps () { // initializes the properties file
 		
 		//variables section
-		String propsFilePath = "E:\\Users\\Fionn\\Documents\\Library of Palanthas\\1.work ƒ\\QualiTest\\Training\\Selenium WebDriver with Java\\Selenium Java Tutorial\\"; // file path to your properties file here
-		String propsFileName = "SeleniumTutorialProps.properties";
+		String propsFilePath = "./"; // file path to your properties file here
+		String propsFileName = "SeleniumTutorialProps.properties";  // file name may be changed prior to use
 		
 		
 		//begin InitProps
@@ -65,10 +82,9 @@ public class TestToolkit {
 		}
 		
 	} //end InitProps
+
 	
-	
-	
-	public static WebDriver InitWebDrv (String choice) {
+public static WebDriver InitWebDrv (String choice, DesiredCapabilities c, String remURL, boolean isHeadless) { // function overload of InitWebDrv to allow for web driver options. Must be updated to include declarations for other browser options profiles.
 		
 		//variables section
 		String setPropPath; // strings for web driver key and path parameters, concatenated based on user choice
@@ -83,13 +99,25 @@ public class TestToolkit {
 		switch (exeChoice){
 		case CHROME:{
 			setPropPath = props.getProperty("driversDir") + "\\chromedriver.exe";
-			System.setProperty("webdriver.chrome.driver", setPropPath); // each statement is a concatenated string which forms the appropriate data type for each parameter of setProperty.
-			return new ChromeDriver();
+			System.setProperty("webdriver.chrome.driver", setPropPath);
+			if(c != null || isHeadless) { // if either of the modification parameters is implemented
+				ChromeOptions chromeOpts = new ChromeOptions();
+				if(c != null) {
+					chromeOpts.merge(c);
+				}
+				if(isHeadless) {
+					chromeOpts.addArguments("headless");
+				}
+				return new ChromeDriver(chromeOpts);
+			}
+			else {
+				return new ChromeDriver();
+			}
 		}
 		case FIREFOX:{
 			setPropPath = props.getProperty("driversDir") + "\\geckodriver.exe"; // this reads the file path from the properties file and concatenates the filename for the Firefox Gecko driver, and assembles the path string.
 			System.setProperty("webdriver.gecko.driver", setPropPath); // This sets the java system property that connects the key name for the system property for the webdriver to a string that refers to the path for that webdriver, say "C:\\Users\\Username\\Documents\\Webdriver".  Once this is set...
-			return new FirefoxDriver();  // ..then we can just use this assignment to instantiate and initialize the
+			return new FirefoxDriver();  // ..then we can just use this assignment to instantiate and initialize the driver object.
 		}
 		case EDGE:{
 			setPropPath = props.getProperty("driversDir") + "\\MicrosoftWebDriver.exe";
@@ -101,6 +129,21 @@ public class TestToolkit {
 			System.setProperty("webdriver.ie.driver", setPropPath);
 			return new InternetExplorerDriver();
 		}
+		case REMOTE:{
+			if(c == null || remURL == null) {
+				throw new IllegalArgumentException("One or more required parameters (desired capabilities, remote system URL, isHeadless) is missing.");
+			}
+			else {
+				try {
+					return new RemoteWebDriver(new URL(remURL), c);
+				} catch (MalformedURLException e) {
+					// TODO Auto-generated catch block
+					System.out.println("Unable to parse string \"" + remURL + "\" to URL.");
+					e.printStackTrace();
+				}
+			}
+		}
+		// Other web drivers will be programmed in later, but for now there will be an exception throw.
 		default:{
 			throw new IllegalArgumentException("No valid browser choice in argument or properties file.");
 		}
@@ -108,57 +151,39 @@ public class TestToolkit {
 			
 		//log1.info("driver initialized for " + props.getProperty("browserChoice"));
 	} //end InitWebDrv
+
+	public static WebDriver InitWebDrv (String choice, DesiredCapabilities c, boolean isHeadless) {
+		
+		return InitWebDrv(choice, c, null, isHeadless);
+		
+	}
 	
-public static WebDriver InitWebDrv (String choice, DesiredCapabilities c) { // function overload of InitWebDrv to allow for web driver options. Must be updated to include declarations for other browser options profiles.
+	public static WebDriver InitWebDrv (String choice) {
 		
-		//variables section
-		String setPropPath; // strings for web driver key and path parameters, concatenated based on user choice
-		Browser exeChoice = Browser.valueOf(choice.toUpperCase()); // parses the browser choice to enumeration
+		return InitWebDrv(choice, null, null, false);
 		
-		//begin webDriverSetup
-		// Determine whether the user wants to use the properties file preset
-		if(exeChoice == Browser.PROP) {
-			exeChoice = Browser.valueOf(props.getProperty("browserChoice").toUpperCase()); // use the properties file preset
-		}
-		
-		switch (exeChoice){
-		case CHROME:{
-			setPropPath = props.getProperty("driversDir") + "\\chromedriver.exe";
-			System.setProperty("webdriver.chrome.driver", setPropPath); 
-			ChromeOptions chromeOpts = new ChromeOptions();
-			chromeOpts.merge(c);
-			return new ChromeDriver(chromeOpts);
-		}
-		case FIREFOX:{
-			setPropPath = props.getProperty("driversDir") + "\\geckodriver.exe"; 
-			System.setProperty("webdriver.gecko.driver", setPropPath); 
-			return new FirefoxDriver();  
-		}
-		case EDGE:{
-			setPropPath = props.getProperty("driversDir") + "\\MicrosoftWebDriver.exe";
-			System.setProperty("webdriver.edge.driver", setPropPath); 
-			return new EdgeDriver();
-		}
-		case MSIE:{
-			setPropPath = props.getProperty("driversDir") + "\\IEDriverServer.exe"; // execute this code block.
-			System.setProperty("webdriver.ie.driver", setPropPath);
-			return new InternetExplorerDriver();
-		}
-		default:{
-			throw new IllegalArgumentException("No valid browser choice in argument or properties file.");
-		}
-		}//end switch(exeChoice)
-			
-		//log1.info("driver initialized for " + props.getProperty("browserChoice"));
-	} //end InitWebDrv
+	}
 	
+	public static void InitGlobalDrv(String choice) { // initializes the public static webDriver for common use, instead of using InitWebDrv to instantiate a WebDriver object local to a class.
+		
+		gDriver = InitWebDrv(choice); // calls webdriver initializer function overload without DesiredCapabilities parameter.
+		
+	}
+	
+	public static void InitGlobalDrv(String choice, DesiredCapabilities c, String remURL, boolean isHeadless) { // initializes the public static webDriver for common use, instead of using InitWebDrv to instantiate a WebDriver object local to a class.  Function overload for DesiredCapabilities.
+		
+		gDriver = InitWebDrv(choice, c, remURL, isHeadless);
+		
+	}
+
 	//@BeforeSuite
-	public static void Initializer () throws IOException { // opens the properties file and initializes the webdriver for use by other scripts.
-		
-		InitProps();
-		InitWebDrv(Browser.PROP.toString());
-		
-	} //end Initializer
+//	public static void Initializer () throws IOException { // opens the properties file and initializes the webdriver for use by other scripts.
+//		
+//		InitProps();
+//		InitWebDrv(Browser.PROP.toString());
+//		
+//	} //end Initializer
+	// Come on, it's two lines of code.
 
 	public static int getRandomNumberInRange(int min, int max) {
 
@@ -185,7 +210,7 @@ public static WebDriver InitWebDrv (String choice, DesiredCapabilities c) { // f
 		
 	}//end ExcludeChar
 
-	public static String RandString (int length, boolean alphaNumOnly) {
+	public static String RandString (int length, boolean alphaNumOnly) { // generates a random text string based on the ASCII table.
 		
 		//variables section
 		String garble = new String();
@@ -231,7 +256,7 @@ public static WebDriver InitWebDrv (String choice, DesiredCapabilities c) { // f
 		
 	}//end DynMenuSelect
 	
-	public static String TimeStamp () { // generates common time stamp
+	public static String TimeStamp () { // generates common time stamp in a DOS-compatible format
 		
 		Date d = new Date();
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-M-d_k-m-s");
@@ -252,6 +277,32 @@ public static WebDriver InitWebDrv (String choice, DesiredCapabilities c) { // f
 		
 	}
 	
+	// Extents reporting methods
+	public static ExtentReports GetReportObject(String reportName, String docTitle, String testerID) { // function overload to call GetReportObject with default path of project folder\report folder.
+		
+		return GetReportObject(reportName, docTitle, testerID, System.getProperty("user.dir") + "\\reports\\index.html");
+		
+	}
 	
+	public static ExtentReports GetReportObject(String testerID) { // function overload to call GetReportObject with default path of project folder\report folder, and default labels for the report and document titles.
+		
+		return GetReportObject("Test Report", "Test Results", testerID, System.getProperty("user.dir") + "\\reports\\index.html");
+		
+	}
 	
+	public static ExtentReports GetReportObject(String reportName, String docTitle, String testerID, String path) { // this is written as a utility function which may be called externally, for example, from the Test Toolkit.
+		
+		//variables section
+		ExtentSparkReporter cronkite = new ExtentSparkReporter(path);  // instantiate spark reporter for extent report file generation
+		ExtentReports extentRep = new ExtentReports(); // this needs to be instantiated in order to accept the ExtentSparkReporter
+		
+		//begin getReportObject
+		cronkite.config().setReportName(reportName);
+		cronkite.config().setDocumentTitle(docTitle);
+		extentRep.attachReporter(cronkite);
+		extentRep.setSystemInfo("Tester", testerID);
+		return extentRep;
+		
+	}//end getReportObject
+		
 }
